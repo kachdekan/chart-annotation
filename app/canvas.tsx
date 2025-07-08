@@ -132,26 +132,46 @@ function createFlowchartGroups(graph: IGraph) {
     'Report Generation'
   ]
 
-  const groupPositions = [
-    new Point(0, 0),
-    new Point(400, 0),
-    new Point(800, 0),
-    new Point(200, 300),
-    new Point(600, 300)
-  ]
+  // Create main container group for all flowcharts
+  const mainGroup = graph.createGroupNode()
+  graph.addLabel(mainGroup, 'Flowchart Collection')
+  
+  // Set transparent style for the main group (no outline)
+  graph.setStyle(mainGroup, new GroupNodeStyle({
+    tabFill: 'transparent',
+    contentAreaFill: 'transparent',
+    stroke: 'transparent',
+    cornerRadius: 0,
+    tabPosition: 'top-leading',
+    tabWidth: 0,
+    tabHeight: 0
+  }))
 
+  const groupPositions = [
+    new Point(50, 50),
+    new Point(450, 50),
+    new Point(850, 50),
+    new Point(250, 350),
+    new Point(650, 350)
+  ]
   flowchartNames.forEach((name, index) => {
-    createFlowchart(graph, name, groupPositions[index])
+    createFlowchart(graph, name, groupPositions[index], mainGroup)
   })
+  
+  // Adjust the main group bounds to fit all content
+  graph.adjustGroupNodeLayout(mainGroup)
 }
 
-function createFlowchart(graph: IGraph, name: string, position: Point) {
+function createFlowchart(graph: IGraph, name: string, position: Point, parentGroup: INode) {
   // Generate random number of nodes between 5 and 10
   const nodeCount = Math.floor(Math.random() * 6) + 5
   
   // Create group node
   const groupNode = graph.createGroupNode()
   graph.addLabel(groupNode, name)
+  
+  // Set this flowchart group as child of the main group
+  graph.setParent(groupNode, parentGroup)
   
   const nodes: INode[] = []
   
