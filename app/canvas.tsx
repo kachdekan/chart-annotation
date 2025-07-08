@@ -8,7 +8,7 @@ import {
   IGraph,
   Rect,
   Size,
-  ShapeNodeStyle,
+  //ShapeNodeStyle,
   GraphItemTypes,
   
 } from '@yfiles/yfiles'
@@ -16,6 +16,9 @@ import yfLicense from "@/lib/license.json"
 import { ZoomControls } from '@/components/ZoomControls'
 import { Toolbar } from '@/components/Toolbar'
 import { LeftPanel } from '@/components/LeftPanel'
+import { ReactComponentNodeStyle } from '@/utils/ReactComponentNodeStyle'
+import { NodeTemplate } from '@/components/yfiles/NodeTemplate'
+import { AnnotationToolbar } from '@/components/AnnotationToolbar'
 
 // You'll need to provide your yFiles license here
 License.value = yfLicense
@@ -73,6 +76,9 @@ export default function YFilesCanvas() {
         onZoomReset={handleZoomReset}
       />
         <div ref={containerRef} className="absolute inset-0 w-full h-full" />
+      <AnnotationToolbar onZoomIn={handleZoomIn}
+        onZoomOut={handleZoomOut}
+        onZoomReset={handleZoomReset}/>
       <ZoomControls 
         zoom={zoom}
         onZoomIn={handleZoomIn}
@@ -85,11 +91,7 @@ export default function YFilesCanvas() {
 
 function configureGraph(graph: IGraph) {
   // Configure default styles for nodes and edges
-  graph.nodeDefaults.style = new ShapeNodeStyle({
-    shape: 'rectangle',
-    fill: 'hsl(var(--primary))',
-    stroke: 'hsl(var(--primary))'
-  })
+  graph.nodeDefaults.style = new ReactComponentNodeStyle(NodeTemplate)
 
   graph.nodeDefaults.size = new Size(100, 60)
 

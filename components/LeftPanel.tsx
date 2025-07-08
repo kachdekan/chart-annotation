@@ -26,7 +26,7 @@ import Logo from "@/public/yfilesLogo.png"
 
 export function LeftPanel() {
   const [selectedProject, setSelectedProject] = useState('api-integration');
-  const [openTextEditor, setTextEditorOpen ] = useState<boolean>(true)
+  const [openTextEditor, setTextEditorOpen ] = useState<boolean>(false)
   const [editorHeight, setEditorHeight] = useState('400px');
   useEffect(() => {
     const updateHeight = () => {

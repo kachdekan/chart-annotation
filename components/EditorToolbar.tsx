@@ -2,8 +2,6 @@ import { Button } from '@/components/ui/button';
 import type { Editor } from '@tiptap/react';
 import { 
   Bold, 
-  Italic, 
-  Strikethrough, 
   Code, 
   MessageSquare,
   Undo,
