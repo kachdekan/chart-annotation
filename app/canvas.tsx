@@ -82,8 +82,8 @@ export default function YFilesCanvas() {
       allowEditLabel: true
     })
     
-    // Add right-click handler for arrows
-    inputMode.addItemRightClickedListener((sender, args) => {
+    // Add double-click handler for arrows
+    inputMode.addItemDoubleClickedListener((sender, args) => {
       const item = args.item
       if (item instanceof IEdge) {
         const arrowData = arrowsRef.current.get(item)
@@ -124,8 +124,8 @@ export default function YFilesCanvas() {
         allowEditLabel: true
       })
       
-      // Re-add right-click handler for arrows
-      inputMode.addItemRightClickedListener((sender, args) => {
+      // Re-add double-click handler for arrows
+      inputMode.addItemDoubleClickedListener((sender, args) => {
         const item = args.item
         if (item instanceof IEdge) {
           const arrowData = arrowsRef.current.get(item)
