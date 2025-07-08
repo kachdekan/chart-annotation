@@ -30,13 +30,15 @@ import {
 
 
 interface ToolProps {
+  isArrowMode: boolean;
+  onArrowModeToggle: () => void;
 
   onZoomIn: () => void;
   onZoomOut: () => void;
   onZoomReset: () => void;
 }
 
-export function Toolbar({ onZoomIn, onZoomOut, onZoomReset }: ToolProps) {
+export function Toolbar({ isArrowMode, onArrowModeToggle, onZoomIn, onZoomOut, onZoomReset }: ToolProps) {
   return (
     <div className="fixed top-5 right-5 z-50 flex flex-row space-x-1.5 bg-white/90 dark:bg-slate-900/90 rounded-lg border border-slate-200 dark:border-slate-700 p-1.5 shadow-sm ">
       <TooltipProvider>
@@ -45,7 +47,7 @@ export function Toolbar({ onZoomIn, onZoomOut, onZoomReset }: ToolProps) {
             <Button
               variant="ghost"
               size="sm"
-              className="h-9 w-9 p-0 hover:bg-slate-100 dark:hover:bg-slate-800"
+              className={`h-9 w-9 p-0 hover:bg-slate-100 dark:hover:bg-slate-800 ${isArrowMode ? 'bg-blue-100 dark:bg-blue-900' : ''}`}
               onClick={onZoomIn}
               aria-label="Zoom in"
             >
@@ -121,14 +123,14 @@ export function Toolbar({ onZoomIn, onZoomOut, onZoomReset }: ToolProps) {
             <Button
               variant="ghost"
               size="sm"
-              className="h-9 w-9 p-0 hover:bg-slate-100 dark:hover:bg-slate-800"
-              onClick={onZoomReset}
+              className={`h-9 w-9 p-0 hover:bg-slate-100 dark:hover:bg-slate-800 ${isArrowMode ? 'bg-blue-100 dark:bg-blue-900' : ''}`}
+              onClick={onArrowModeToggle}
               aria-label="Reset zoom"
             >
               <CornerUpRight className="h-8 w-8" />
             </Button>
           </TooltipTrigger>
-          <TooltipContent>Edge</TooltipContent>
+          <TooltipContent>{isArrowMode ? 'Exit Arrow Mode' : 'Arrow Tool'}</TooltipContent>
         </Tooltip>
       </TooltipProvider>
       <div>

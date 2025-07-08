@@ -38,82 +38,135 @@ import {
 
 
 interface ToolProps {
-
-  onZoomIn: () => void;
-  onZoomOut: () => void;
-  onZoomReset: () => void;
+  position?: { x: number; y: number };
+  selectedColor?: string;
+  onColorChange?: (color: string) => void;
+  onDelete?: () => void;
+  onClose?: () => void;
 }
 
-export function AnnotationToolbar({ onZoomIn, onZoomOut, onZoomReset }: ToolProps) {
+export function AnnotationToolbar({ position, selectedColor = 'blue', onColorChange, onDelete, onClose }: ToolProps) {
+  if (!position) return null;
+
+  const style = {
+    left: `${position.x}px`,
+    top: `${position.y}px`,
+    transform: 'translate(-50%, -100%)',
+  };
+
   return (
-    <div className="fixed bottom-5 right-150 z-50 flex flex-row space-x-1.5 bg-white/90 dark:bg-slate-900/90 rounded-lg border border-slate-200 dark:border-slate-700 p-1.5 shadow-sm ">
+    <div 
+      className="fixed z-50 flex flex-row space-x-1.5 bg-white/90 dark:bg-slate-900/90 rounded-lg border border-slate-200 dark:border-slate-700 p-1.5 shadow-sm"
+      style={style}
+    >
       <TooltipProvider>
       <Tooltip>
           <TooltipTrigger asChild>
-            {/*<Button
-              variant="ghost"
-              size="sm"
-              className="h-9 w-9 p-0 hover:bg-slate-100 dark:hover:bg-slate-800"
-              onClick={onZoomReset}
-              aria-label="Reset zoom"
-            >
-              <Circle className="h-8 w-8 fill-blue-600 stroke-blue-600"/>
-            </Button>*/}
                 <Select
-
-      onValueChange={(value) => {
-        console.log(value)
-      }}
+      value={selectedColor}
+      onValueChange={onColorChange}
       >
         <SelectTrigger className="w-32 h-8 text-sm">
-            <SelectValue placeholder={<div className='flex flex-row items-center'>
-              <Circle className="h-8 w-8 fill-blue-400 stroke-blue-400 mr-2"/>
-              Blue
-            </div>} />
+            <SelectValue />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="blue">
+              <div className='flex flex-row items-center'>
               <Circle className="h-8 w-8 fill-blue-400 stroke-blue-400"/>
               Blue
+              </div>
             </SelectItem>
             <SelectItem value="yellow">
+              <div className='flex flex-row items-center'>
               <Circle className="h-8 w-8 fill-yellow-200 stroke-yellow-200"/>
               Yellow
+              </div>
             </SelectItem>
             <SelectItem value="orange">
+              <div className='flex flex-row items-center'>
               <Circle className="h-8 w-8 fill-orange-300 stroke-orange-300"/>
               Orange
+              </div>
             </SelectItem>
             <SelectItem value="red">
+              <div className='flex flex-row items-center'>
               <Circle className="h-8 w-8 fill-red-400 stroke-red-400"/>
               Red
+              </div>
+            </SelectItem>
+            <SelectItem value="green">
+              <div className='flex flex-row items-center'>
+              <Circle className="h-8 w-8 fill-green-400 stroke-green-400"/>
+              Green
+              </div>
+            </SelectItem>
+            <SelectItem value="purple">
+              <div className='flex flex-row items-center'>
+              <Circle className="h-8 w-8 fill-purple-400 stroke-purple-400"/>
+              Purple
+              </div>
             </SelectItem>
           </SelectContent>
     </Select>
           </TooltipTrigger>
           <TooltipContent>Color</TooltipContent>
         </Tooltip>
-        <Tooltip>
+        
+        {onDelete && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-9 w-9 p-0 hover:bg-red-100 dark:hover:bg-red-900 text-red-600"
+                onClick={onDelete}
+                aria-label="Delete arrow"
+              >
+                <ChartNoAxesGantt className="h-8 w-8" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Delete</TooltipContent>
+          </Tooltip>
+        )}
+        
+        {onClose && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-9 w-9 p-0 hover:bg-slate-100 dark:hover:bg-slate-800"
+                onClick={onClose}
+                aria-label="Close"
+              >
+                <Diamond className="h-8 w-8" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Close</TooltipContent>
+          </Tooltip>
+        )}
+        
+        {/*<Tooltip>
           <TooltipTrigger asChild>
             <Button
               variant="ghost"
               size="sm"
               className="h-9 w-9 p-0 hover:bg-slate-100 dark:hover:bg-slate-800"
-              onClick={onZoomIn}
+              onClick={() => {}}
               aria-label="Zoom in"
             >
               <ChartNoAxesGantt className="h-8 w-8" />
             </Button>
           </TooltipTrigger>
           <TooltipContent>Stroke</TooltipContent>
-        </Tooltip>
-        <Tooltip>
+        </Tooltip>*/}
+        {/*<Tooltip>
           <TooltipTrigger asChild>
             <Button
               variant="ghost"
               size="sm"
               className="h-9 w-9 p-0 hover:bg-slate-100 dark:hover:bg-slate-800"
-              onClick={onZoomOut}
+              onClick={() => {}}
               
               aria-label="Zoom out"
             >
@@ -121,22 +174,22 @@ export function AnnotationToolbar({ onZoomIn, onZoomOut, onZoomReset }: ToolProp
             </Button>
           </TooltipTrigger>
           <TooltipContent>Diamond</TooltipContent>
-        </Tooltip>
+        </Tooltip>*/}
        
-        <Tooltip>
+        {/*<Tooltip>
           <TooltipTrigger asChild>
             <Button
               variant="ghost"
               size="sm"
               className="h-9 w-9 p-0 hover:bg-slate-100 dark:hover:bg-slate-800"
-              onClick={onZoomReset}
+              onClick={() => {}}
               aria-label="Reset zoom"
             >
               <CornerUpRight className="h-8 w-8" />
             </Button>
           </TooltipTrigger>
           <TooltipContent>Edge</TooltipContent>
-        </Tooltip>
+        </Tooltip>*/}
       </TooltipProvider>
     </div>
   );
