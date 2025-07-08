@@ -197,7 +197,6 @@ async function applyLayoutAndFit(graphComponent: GraphComponent) {
     graphComponent,
     layout: new MinimumNodeSizeStage(layout),
     layoutData,
-    duration: '0.5s',
     animateViewport: true
   })
   
