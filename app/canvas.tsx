@@ -83,7 +83,7 @@ export default function YFilesCanvas() {
     })
     
     // Add double-click handler for arrows
-    inputMode.addItemDoubleClickedListener((sender, args) => {
+    inputMode.itemDoubleClicked.addListener((sender, args) => {
       const item = args.item
       if (item instanceof IEdge) {
         const arrowData = arrowsRef.current.get(item)
@@ -125,7 +125,7 @@ export default function YFilesCanvas() {
       })
       
       // Re-add double-click handler for arrows
-      inputMode.addItemDoubleClickedListener((sender, args) => {
+      inputMode.itemDoubleClicked.addListener((sender, args) => {
         const item = args.item
         if (item instanceof IEdge) {
           const arrowData = arrowsRef.current.get(item)
@@ -305,13 +305,15 @@ export default function YFilesCanvas() {
     <div className="relative h-full w-full">
       
       <LeftPanel />
-      <Toolbar 
-        isArrowMode={isArrowMode}
-        onArrowModeToggle={handleArrowModeToggle}
-        onZoomIn={handleZoomIn}
-        onZoomOut={handleZoomOut}
-        onZoomReset={handleZoomReset}
-      />
+      {selectedArrow && (
+        <Toolbar 
+          isArrowMode={isArrowMode}
+          onArrowModeToggle={handleArrowModeToggle}
+          onZoomIn={handleZoomIn}
+          onZoomOut={handleZoomOut}
+          onZoomReset={handleZoomReset}
+        />
+      )}
         <div ref={containerRef} className="absolute inset-0 w-full h-full" />
       {selectedArrow && annotationPosition && (
         <AnnotationToolbar 
