@@ -58,6 +58,7 @@ export default function YFilesCanvas() {
   const [selectedArrow, setSelectedArrow] = useState<ArrowData | null>(null)
   const [annotationPosition, setAnnotationPosition] = useState<{ x: number; y: number } | null>(null)
   const arrowsRef = useRef<Map<IEdge, ArrowData>>(new Map())
+  const [currentDrawingArrow, setCurrentDrawingArrow] = useState<ArrowData | null>(null)
 
   useEffect(() => {
     if (!containerRef.current || graphComponentRef.current) {
@@ -85,6 +86,20 @@ export default function YFilesCanvas() {
     // Add double-click handler for arrows
     // Add double-click handler for arrows using yFiles v30 syntax
     inputMode.addEventListener('item-double-clicked', (args) => {
+      const item = args.item
+      if (item instanceof IEdge) {
+        const arrowData = arrowsRef.current.get(item)
+        if (arrowData) {
+          const location = args.location
+          setSelectedArrow(arrowData)
+          setAnnotationPosition({ x: location.x, y: location.y })
+          args.handled = true
+        }
+      }
+    })
+
+    // Add right-click handler for arrows
+    inputMode.addEventListener('item-right-clicked', (args) => {
       const item = args.item
       if (item instanceof IEdge) {
         const arrowData = arrowsRef.current.get(item)
@@ -138,6 +153,20 @@ export default function YFilesCanvas() {
           }
         }
       })
+
+      // Re-add right-click handler for arrows
+      inputMode.addEventListener('item-right-clicked', (args) => {
+        const item = args.item
+        if (item instanceof IEdge) {
+          const arrowData = arrowsRef.current.get(item)
+          if (arrowData) {
+            const location = args.location
+            setSelectedArrow(arrowData)
+            setAnnotationPosition({ x: location.x, y: location.y })
+            args.handled = true
+          }
+        }
+      })
       
       graphComponent.inputMode = inputMode
     }
@@ -147,31 +176,34 @@ export default function YFilesCanvas() {
     const inputMode = new GraphInputMode()
     let isDrawing = false
     let startPoint: Point | null = null
-    let currentArrow: ArrowData | null = null
 
     inputMode.addEventListener('canvas-clicked', (args) => {
       if (!isDrawing) {
         // Start drawing
         startPoint = args.location
         isDrawing = true
+        
+        // Clear any existing selection
+        setSelectedArrow(null)
+        setAnnotationPosition(null)
       } else {
         // Finish drawing
-        if (startPoint && currentArrow) {
+        if (startPoint && currentDrawingArrow) {
           const endPoint = args.location
           
           // Update the end node position
-          graph.setNodeLayout(currentArrow.endNode, new Rect(endPoint.x - 1, endPoint.y - 1, 2, 2))
+          graph.setNodeLayout(currentDrawingArrow.endNode, new Rect(endPoint.x - 1, endPoint.y - 1, 2, 2))
           
           // Adjust group bounds
-          graph.adjustGroupNodeLayout(currentArrow.group)
+          graph.adjustGroupNodeLayout(currentDrawingArrow.group)
           
           // Store the arrow data
-          arrowsRef.current.set(currentArrow.edge, currentArrow)
+          arrowsRef.current.set(currentDrawingArrow.edge, currentDrawingArrow)
         }
         
         isDrawing = false
         startPoint = null
-        currentArrow = null
+        setCurrentDrawingArrow(null)
       }
     })
 
@@ -179,13 +211,42 @@ export default function YFilesCanvas() {
       if (isDrawing && startPoint) {
         const currentPoint = args.location
         
-        if (!currentArrow) {
+        if (!currentDrawingArrow) {
           // Create the arrow structure
-          currentArrow = createArrowStructure(graph, startPoint, currentPoint, arrowColor)
+          const newArrow = createArrowStructure(graph, startPoint, currentPoint, arrowColor)
+          setCurrentDrawingArrow(newArrow)
         } else {
           // Update the end node position
-          graph.setNodeLayout(currentArrow.endNode, new Rect(currentPoint.x - 1, currentPoint.y - 1, 2, 2))
-          graph.adjustGroupNodeLayout(currentArrow.group)
+          graph.setNodeLayout(currentDrawingArrow.endNode, new Rect(currentPoint.x - 1, currentPoint.y - 1, 2, 2))
+          graph.adjustGroupNodeLayout(currentDrawingArrow.group)
+        }
+      }
+    })
+
+    // Handle escape key to cancel drawing
+    inputMode.addEventListener('key-down', (args) => {
+      if (args.key === 'Escape' && isDrawing) {
+        if (currentDrawingArrow) {
+          // Remove the incomplete arrow
+          graph.remove(currentDrawingArrow.group)
+        }
+        isDrawing = false
+        startPoint = null
+        setCurrentDrawingArrow(null)
+        args.handled = true
+      }
+    })
+
+    // Add right-click handler for arrows in drawing mode
+    inputMode.addEventListener('item-right-clicked', (args) => {
+      const item = args.item
+      if (item instanceof IEdge) {
+        const arrowData = arrowsRef.current.get(item)
+        if (arrowData) {
+          const location = args.location
+          setSelectedArrow(arrowData)
+          setAnnotationPosition({ x: location.x, y: location.y })
+          args.handled = true
         }
       }
     })
@@ -197,7 +258,7 @@ export default function YFilesCanvas() {
     // Create group for the arrow
     const group = graph.createGroupNode()
     
-    // Set transparent group style
+    // Set transparent group style with proper bounds
     graph.setStyle(group, new GroupNodeStyle({
       tabFill: 'transparent',
       contentAreaFill: 'transparent',
@@ -236,6 +297,9 @@ export default function YFilesCanvas() {
     })
     graph.setStyle(edge, edgeStyle)
     
+    // Adjust group bounds to fit content
+    graph.adjustGroupNodeLayout(group)
+    
     return {
       group,
       edge,
@@ -260,6 +324,7 @@ export default function YFilesCanvas() {
     
     graph.setStyle(arrowData.edge, edgeStyle)
     arrowData.color = newColor
+    arrowsRef.current.set(arrowData.edge, arrowData)
   }
 
   const deleteArrow = (arrowData: ArrowData) => {
@@ -276,6 +341,11 @@ export default function YFilesCanvas() {
     // Clear selection
     setSelectedArrow(null)
     setAnnotationPosition(null)
+    
+    // If this was the currently drawing arrow, clear that too
+    if (currentDrawingArrow === arrowData) {
+      setCurrentDrawingArrow(null)
+    }
   }
 
   const getColorValue = (colorName: string): string => {
