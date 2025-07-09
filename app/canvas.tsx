@@ -311,7 +311,7 @@ export default function YFilesCanvas() {
     <div className="relative h-full w-full">
       
       <LeftPanel />
-      {selectedArrow && (
+      
         <Toolbar 
           isArrowMode={isArrowMode}
           onArrowModeToggle={handleArrowModeToggle}
@@ -319,7 +319,7 @@ export default function YFilesCanvas() {
           onZoomOut={handleZoomOut}
           onZoomReset={handleZoomReset}
         />
-      )}
+      
         <div ref={containerRef} className="absolute inset-0 w-full h-full" />
       {selectedArrow && annotationPosition && (
         <AnnotationToolbar 
