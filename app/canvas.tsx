@@ -83,21 +83,19 @@ export default function YFilesCanvas() {
     })
     
     // Add double-click handler for arrows
-    // Check if itemDoubleClicked exists before adding listener
-    if (inputMode.itemDoubleClicked && inputMode.itemDoubleClicked.addListener) {
-      inputMode.itemDoubleClicked.addListener((sender, args) => {
-        const item = args.item
-        if (item instanceof IEdge) {
-          const arrowData = arrowsRef.current.get(item)
-          if (arrowData) {
-            const location = args.location
-            setSelectedArrow(arrowData)
-            setAnnotationPosition({ x: location.x, y: location.y })
-            args.handled = true
-          }
+    // Add double-click handler for arrows using yFiles v30 syntax
+    inputMode.addEventListener('item-double-clicked', (args) => {
+      const item = args.item
+      if (item instanceof IEdge) {
+        const arrowData = arrowsRef.current.get(item)
+        if (arrowData) {
+          const location = args.location
+          setSelectedArrow(arrowData)
+          setAnnotationPosition({ x: location.x, y: location.y })
+          args.handled = true
         }
-      })
-    }
+      }
+    })
     
     graphComponent.inputMode = inputMode
 
@@ -127,22 +125,19 @@ export default function YFilesCanvas() {
         allowEditLabel: true
       })
       
-      // Re-add double-click handler for arrows
-      // Check if itemDoubleClicked exists before adding listener
-      if (inputMode.itemDoubleClicked && inputMode.itemDoubleClicked.addListener) {
-        inputMode.itemDoubleClicked.addListener((sender, args) => {
-          const item = args.item
-          if (item instanceof IEdge) {
-            const arrowData = arrowsRef.current.get(item)
-            if (arrowData) {
-              const location = args.location
-              setSelectedArrow(arrowData)
-              setAnnotationPosition({ x: location.x, y: location.y })
-              args.handled = true
-            }
+      // Re-add double-click handler for arrows using yFiles v30 syntax
+      inputMode.addEventListener('item-double-clicked', (args) => {
+        const item = args.item
+        if (item instanceof IEdge) {
+          const arrowData = arrowsRef.current.get(item)
+          if (arrowData) {
+            const location = args.location
+            setSelectedArrow(arrowData)
+            setAnnotationPosition({ x: location.x, y: location.y })
+            args.handled = true
           }
-        })
-      }
+        }
+      })
       
       graphComponent.inputMode = inputMode
     }
@@ -154,7 +149,7 @@ export default function YFilesCanvas() {
     let startPoint: Point | null = null
     let currentArrow: ArrowData | null = null
 
-    inputMode.addCanvasClickedListener((sender, args) => {
+    inputMode.addEventListener('canvas-clicked', (args) => {
       if (!isDrawing) {
         // Start drawing
         startPoint = args.location
@@ -180,7 +175,7 @@ export default function YFilesCanvas() {
       }
     })
 
-    inputMode.addMouseMovedListener((sender, args) => {
+    inputMode.addEventListener('mouse-moved', (args) => {
       if (isDrawing && startPoint) {
         const currentPoint = args.location
         
