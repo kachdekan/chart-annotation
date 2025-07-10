@@ -13,8 +13,6 @@ import {
   GroupNodeStyle,
   INode,
   Point,
-  HierarchicLayout,
-  HierarchicLayoutData,
   LayoutExecutor,
   MinimumNodeSizeStage,
   ComponentLayout,
@@ -35,6 +33,9 @@ License.value = yfLicense
 export default function YFilesCanvas() {
   const graphComponentRef = useRef<GraphComponent | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+  const [isArrowMode, setIsArrowMode] = useState(false)
+  const [isStickyMode, setIsStickyMode] = useState(false)
+  const [isTextMode, setIsTextMode] = useState(false)
 
   useEffect(() => {
     if (!containerRef.current || graphComponentRef.current) {
@@ -56,8 +57,15 @@ export default function YFilesCanvas() {
     // Enable editing
     graphComponent.inputMode = new GraphEditorInputMode({
       selectableItems: GraphItemTypes.NODE | GraphItemTypes.EDGE,
-      allowEditLabel: true
+      allowEditLabel: true,
+      allowCreateNode: false
+
     })
+
+    graphComponent.inputMode.addEventListener('item-right-clicked', (args) => {
+      console.log("Graph Right Clicked", args.item)
+    })
+
 
     // Apply layout and fit the graph
     applyLayoutAndFit(graphComponent)
@@ -68,6 +76,13 @@ export default function YFilesCanvas() {
       graphComponentRef.current = null
     }
   }, [])
+
+  useEffect(() => {
+    if (!containerRef.current || graphComponentRef.current) {
+      return
+    }
+    //Annotation actions here
+  }, [isArrowMode, isStickyMode, isTextMode])
 
   const [zoom, setZoom] = useState(100);
 
@@ -80,9 +95,12 @@ export default function YFilesCanvas() {
       
       <LeftPanel />
       <Toolbar 
-        onZoomIn={handleZoomIn}
+       onZoomIn={handleZoomIn}
         onZoomOut={handleZoomOut}
         onZoomReset={handleZoomReset}
+        onArrowTool={() => setIsArrowMode(true)}
+        onStickyNote={() => setIsStickyMode(true)}
+        onTextTool={() => setIsTextMode(true)}
       />
         <div ref={containerRef} className="absolute inset-0 w-full h-full" />
       <AnnotationToolbar onZoomIn={handleZoomIn}
@@ -114,13 +132,7 @@ function configureGraph(graph: IGraph) {
     tabWidth: 120,
     tabHeight: 24
   })
-  /*graph.edgeDefaults.style = {
-    targetArrow: '#hsl(var(--primary)) small triangle'
-  }
 
-  graph.nodeDefaults.labels.style = new DefaultLabelStyle({
-    textFill: 'hsl(var(--primary-foreground))'
-  })*/
 }
 
 function createFlowchartGroups(graph: IGraph) {
@@ -134,8 +146,7 @@ function createFlowchartGroups(graph: IGraph) {
 
   // Create main container group for all flowcharts
   const mainGroup = graph.createGroupNode()
-  graph.addLabel(mainGroup, 'Flowchart Collection')
-  
+ 
   // Set transparent style for the main group (no outline)
   graph.setStyle(mainGroup, new GroupNodeStyle({
     tabFill: 'transparent',
@@ -168,7 +179,7 @@ function createFlowchart(graph: IGraph, name: string, position: Point, parentGro
   
   // Create group node
   const groupNode = graph.createGroupNode()
-  graph.addLabel(groupNode, name)
+  //graph.addLabel(groupNode, name)
   
   // Set this flowchart group as child of the main group
   graph.setParent(groupNode, parentGroup)
@@ -204,12 +215,8 @@ function createFlowchart(graph: IGraph, name: string, position: Point, parentGro
 }
 
 async function applyLayoutAndFit(graphComponent: GraphComponent) {
-  const graph = graphComponent.graph
-  
   // Apply hierarchical layout to each group
   const layout = new ComponentLayout()
-  layout.componentLayoutPolicy = 'single'
-  
   const layoutData = new ComponentLayoutData()
   
   // Apply layout

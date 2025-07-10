@@ -34,9 +34,13 @@ interface ToolProps {
   onZoomIn: () => void;
   onZoomOut: () => void;
   onZoomReset: () => void;
+  onArrowTool: () => void;
+  onStickyNote: () => void;
+  onTextTool: () => void;
+  
 }
 
-export function Toolbar({ onZoomIn, onZoomOut, onZoomReset }: ToolProps) {
+export function Toolbar({ onZoomIn, onZoomOut, onZoomReset, onArrowTool, onStickyNote, onTextTool }: ToolProps) {
   return (
     <div className="fixed top-5 right-5 z-50 flex flex-row space-x-1.5 bg-white/90 dark:bg-slate-900/90 rounded-lg border border-slate-200 dark:border-slate-700 p-1.5 shadow-sm ">
       <TooltipProvider>
@@ -141,8 +145,8 @@ export function Toolbar({ onZoomIn, onZoomOut, onZoomReset }: ToolProps) {
               variant="ghost"
               size="sm"
               className="h-9 w-9 p-0 hover:bg-slate-100 dark:hover:bg-slate-800"
-              onClick={onZoomReset}
-              aria-label="Reset zoom"
+              onClick={onArrowTool}
+              aria-label="Arrow"
             >
               <MoveUpRight className="h-8 w-8" />
             </Button>
@@ -155,8 +159,8 @@ export function Toolbar({ onZoomIn, onZoomOut, onZoomReset }: ToolProps) {
               variant="ghost"
               size="sm"
               className="h-9 w-9 p-0 hover:bg-slate-100 dark:hover:bg-slate-800"
-              onClick={onZoomIn} 
-              aria-label="Zoom in"
+              onClick={onTextTool} 
+              aria-label="Text"
             >
               <Type className="h-8 w-8" />
             </Button>
@@ -184,7 +188,7 @@ export function Toolbar({ onZoomIn, onZoomOut, onZoomReset }: ToolProps) {
               variant="ghost"
               size="sm"
               className="h-9 w-9 p-0 hover:bg-slate-100 dark:hover:bg-slate-800"
-              onClick={onZoomReset}
+              onClick={onStickyNote}
               aria-label="Reset zoom"
             >
               <StickyNote className="h-8 w-8" />
