@@ -6,6 +6,7 @@ import {
   GraphEditorInputMode,
   License,
   IGraph,
+  IEdge,
   Rect,
   Size,
   //ShapeNodeStyle,
@@ -30,9 +31,11 @@ import { AnnotationToolbar } from '@/components/AnnotationToolbar'
 // You'll need to provide your yFiles license here
 License.value = yfLicense
 
+
 export default function YFilesCanvas() {
   const graphComponentRef = useRef<GraphComponent | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+
   const [toolbarState, setToolbarState] = useState({
     arrowMode: false,
     stickyMode: false,
@@ -98,21 +101,38 @@ export default function YFilesCanvas() {
     const graphComponent = graphComponentRef.current
     graphComponent.inputMode.addEventListener('canvas-clicked', (args) => {
       console.log("Updated", toolbarState)
-      const location = args.location
+     const location = args.location
       if (toolbarState.arrowMode) {
         console.log("Arrow Mode is Enabled")
-        graphComponent.graph.createNode(
-          new Rect(location.x - 50, location.y - 25, 100, 50),
-          new ReactComponentNodeStyle(() => <div className="w-full h-full bg-blue-100 border-2 border-blue-500">→</div>)
+
+        const node1 = graphComponent.graph.createNode(
+          new Rect(location.x, location.y, 1, 1),
         )
+        const port1 = graphComponent.graph.addPort(node1)
+        const node2 = graphComponent.graph.createNode(
+          new Rect(location.x + 150, location.y, 1, 1),
+        )
+        const port2 = graphComponent.graph.addPort(node2)
+        
+        // Create an edge between port1 and port2 with default style
+        graphComponent.graph.createEdge(port1, port2)
+        
+      
       } else if (toolbarState.stickyMode) {
         console.log("Sticky mode enabled")
         const node = graphComponent.graph.createNode(
-          new Rect(location.x - 75, location.y - 50, 150, 100),
+          new Rect(location.x - 75, location.y - 50, 200, 250),
           new ReactComponentNodeStyle(() => (
-            <div className="w-full h-full bg-yellow-100 border-2 border-yellow-300 shadow-md p-2">
-              Sticky Note
-            </div>
+            <g>
+            {/* Background rectangle with border */}
+            <rect
+              width={200}
+              height={250}
+              rx="8" // rounded corners
+              fill="#FFFFC5"
+              strokeWidth={1.5}
+            />
+          </g>
           ))
         )
         graphComponent.graph.addLabel(node, "Double-click to edit Sticky")
@@ -198,10 +218,12 @@ function createFlowchartGroups(graph: IGraph) {
   ]
 
   // Create main container group for all flowcharts
-  const section = graph.createGroupNode()
+  const section1 = graph.createGroupNode()
+  const section2 = graph.createGroupNode()
+
  
   // Set transparent style for the main group (no outline)
-  graph.setStyle(section, new GroupNodeStyle({
+  graph.setStyle(section1, new GroupNodeStyle({
     tabFill: 'transparent',
     contentAreaFill: 'transparent',
     stroke: 'rgba(0, 0, 0, 0.2)',
@@ -211,6 +233,17 @@ function createFlowchartGroups(graph: IGraph) {
     tabHeight: 24
   }))
 
+  graph.setStyle(section2, new GroupNodeStyle({
+    tabFill: 'transparent',
+    contentAreaFill: 'transparent',
+    stroke: 'rgba(0, 0, 0, 0.2)',
+    cornerRadius: 8,
+    tabPosition: 'top-leading',
+    tabWidth: 120,
+    tabHeight: 24
+  }))
+
+
   const groupPositions = [
     new Point(50, 50),
     new Point(450, 50),
@@ -218,13 +251,19 @@ function createFlowchartGroups(graph: IGraph) {
     new Point(250, 350),
     new Point(650, 350)
   ]
-  flowchartNames.forEach((name, index) => {
-    createFlowchart(graph, name, groupPositions[index], section)
+  flowchartNames.slice(0, 3).forEach((name, index) => {
+    createFlowchart(graph, name, groupPositions[index], section1)
+  })
+  flowchartNames.slice(3, 5).forEach((name, index) => {
+    createFlowchart(graph, name, groupPositions[index], section2)
   })
   
+  
   // Adjust the main group bounds to fit all content
-  graph.adjustGroupNodeLayout(section)
-  return section
+  graph.adjustGroupNodeLayout(section1)
+  graph.adjustGroupNodeLayout(section2)
+  
+  return section1
 }
 
 function createFlowchart(graph: IGraph, name: string, position: Point, parentGroup: INode) {
