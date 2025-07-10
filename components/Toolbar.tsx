@@ -30,17 +30,26 @@ import {
 
 
 interface ToolProps {
-
+  state: {
+    arrowMode: boolean,
+    stickyMode: boolean,
+    textMode: boolean,
+    sectionMode: boolean
+  }
   onZoomIn: () => void;
   onZoomOut: () => void;
   onZoomReset: () => void;
   onArrowTool: () => void;
   onStickyNote: () => void;
+  onSectionTool: () => void;
   onTextTool: () => void;
   
 }
 
-export function Toolbar({ onZoomIn, onZoomOut, onZoomReset, onArrowTool, onStickyNote, onTextTool }: ToolProps) {
+export type ToolbarMode = 'arrowMode' | 'stickyMode' | 'textMode' | 'sectionMode' | null;
+
+
+export function Toolbar({ state, onZoomIn, onZoomOut, onZoomReset, onArrowTool, onStickyNote, onTextTool, onSectionTool }: ToolProps) {
   return (
     <div className="fixed top-5 right-5 z-50 flex flex-row space-x-1.5 bg-white/90 dark:bg-slate-900/90 rounded-lg border border-slate-200 dark:border-slate-700 p-1.5 shadow-sm ">
       <TooltipProvider>
@@ -144,7 +153,7 @@ export function Toolbar({ onZoomIn, onZoomOut, onZoomReset, onArrowTool, onStick
             <Button
               variant="ghost"
               size="sm"
-              className="h-9 w-9 p-0 hover:bg-slate-100 dark:hover:bg-slate-800"
+              className={`h-9 w-9 p-0 hover:bg-slate-100 dark:hover:bg-slate-800 ${state.arrowMode ? "bg-gray-300" : ""}`}
               onClick={onArrowTool}
               aria-label="Arrow"
             >
@@ -158,7 +167,7 @@ export function Toolbar({ onZoomIn, onZoomOut, onZoomReset, onArrowTool, onStick
             <Button
               variant="ghost"
               size="sm"
-              className="h-9 w-9 p-0 hover:bg-slate-100 dark:hover:bg-slate-800"
+              className={`h-9 w-9 p-0 hover:bg-slate-100 dark:hover:bg-slate-800 ${state.textMode ? "bg-gray-300" : ""}`}
               onClick={onTextTool} 
               aria-label="Text"
             >
@@ -172,8 +181,8 @@ export function Toolbar({ onZoomIn, onZoomOut, onZoomReset, onArrowTool, onStick
             <Button
               variant="ghost"
               size="sm"
-              className="h-9 w-9 p-0 hover:bg-slate-100 dark:hover:bg-slate-800"
-              onClick={onZoomOut}
+              className={`h-9 w-9 p-0 hover:bg-slate-100 dark:hover:bg-slate-800 ${state.sectionMode ? "bg-gray-300" : ""}`}
+              onClick={onSectionTool}
               
               aria-label="Zoom out"
             >
@@ -187,7 +196,7 @@ export function Toolbar({ onZoomIn, onZoomOut, onZoomReset, onArrowTool, onStick
             <Button
               variant="ghost"
               size="sm"
-              className="h-9 w-9 p-0 hover:bg-slate-100 dark:hover:bg-slate-800"
+              className={`h-9 w-9 p-0 hover:bg-slate-100 dark:hover:bg-slate-800 ${state.stickyMode ? "bg-gray-300" : ""}`}
               onClick={onStickyNote}
               aria-label="Reset zoom"
             >

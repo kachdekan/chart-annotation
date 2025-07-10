@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   GraphComponent,
   GraphEditorInputMode,
@@ -21,7 +21,7 @@ import {
 } from '@yfiles/yfiles'
 import yfLicense from "@/lib/license.json"
 import { ZoomControls } from '@/components/ZoomControls'
-import { Toolbar } from '@/components/Toolbar'
+import { Toolbar, ToolbarMode} from '@/components/Toolbar'
 import { LeftPanel } from '@/components/LeftPanel'
 import { ReactComponentNodeStyle } from '@/utils/ReactComponentNodeStyle'
 import { NodeTemplate } from '@/components/yfiles/NodeTemplate'
@@ -33,10 +33,26 @@ License.value = yfLicense
 export default function YFilesCanvas() {
   const graphComponentRef = useRef<GraphComponent | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
-  const [isArrowMode, setIsArrowMode] = useState(false)
-  const [isStickyMode, setIsStickyMode] = useState(false)
-  const [isTextMode, setIsTextMode] = useState(false)
-  const [mainGroupNode, setMainGroupNode] = useState<INode | null>(null)
+  const [toolbarState, setToolbarState] = useState({
+    arrowMode: false,
+    stickyMode: false,
+    textMode: false,
+    sectionMode: false
+  })
+
+  const setToolbarMode =(mode: ToolbarMode) => {
+    const newState = {
+      arrowMode: false,
+      stickyMode: false,
+      textMode: false,
+      sectionMode: false
+    };
+
+      if(mode) newState[mode] = !toolbarState[mode]
+      setToolbarState(newState);
+  
+  }
+  //let sections: INode[] | null = null
 
   useEffect(() => {
     if (!containerRef.current || graphComponentRef.current) {
@@ -52,24 +68,17 @@ export default function YFilesCanvas() {
     configureGraph(graph)
     
     // Create 5 flowcharts with random nodes
-    const mainGroup = createFlowchartGroups(graph)
-    setMainGroupNode(mainGroup)
+    createFlowchartGroups(graph)
 
     // Enable editing
     graphComponent.inputMode = new GraphEditorInputMode({
       selectableItems: GraphItemTypes.NODE | GraphItemTypes.EDGE,
       allowEditLabel: true,
       allowCreateNode: false
-
+      
     })
 
-    graphComponent.inputMode.addEventListener('item-right-clicked', (args) => {
-      console.log("Graph Right Clicked", args.item)
-    })
-
-    graphComponent.inputMode.addEventListener('canvas-clicked', () => {
-      console.log("Canvas Clicked")
-    })
+   
 
     // Apply layout and fit the graph
     applyLayoutAndFit(graphComponent)
@@ -86,14 +95,45 @@ export default function YFilesCanvas() {
       return
     }
     
-    if (isArrowMode) {
-      console.log("Arrow mode enabled")
-    } else if (isStickyMode) {
-      console.log("Sticky mode enabled")
-    } else if (isTextMode) {
-      console.log("Text mode enabled")
-    }
-  }, [isArrowMode, isStickyMode, isTextMode])
+    const graphComponent = graphComponentRef.current
+    graphComponent.inputMode.addEventListener('canvas-clicked', (args) => {
+      console.log("Updated", toolbarState)
+      const location = args.location
+      if (toolbarState.arrowMode) {
+        console.log("Arrow Mode is Enabled")
+        graphComponent.graph.createNode(
+          new Rect(location.x - 50, location.y - 25, 100, 50),
+          new ReactComponentNodeStyle(() => <div className="w-full h-full bg-blue-100 border-2 border-blue-500">→</div>)
+        )
+      } else if (toolbarState.stickyMode) {
+        console.log("Sticky mode enabled")
+        const node = graphComponent.graph.createNode(
+          new Rect(location.x - 75, location.y - 50, 150, 100),
+          new ReactComponentNodeStyle(() => (
+            <div className="w-full h-full bg-yellow-100 border-2 border-yellow-300 shadow-md p-2">
+              Sticky Note
+            </div>
+          ))
+        )
+        graphComponent.graph.addLabel(node, "Double-click to edit Sticky")
+      } else if (toolbarState.textMode) {
+        console.log("Text mode enabled")
+        const node = graphComponent.graph.createNode(
+          new Rect(location.x - 100, location.y - 25, 200, 50),
+          new ReactComponentNodeStyle(() => (
+            <div className="w-full h-full flex items-center justify-center">
+              <p className="text-center">Double-click to edit text</p>
+            </div>
+          ))
+        )
+        graphComponent.graph.addLabel(node, "Double-click to edit")
+      }else if (toolbarState.sectionMode) {
+        console.log("Text mode enabled")
+      }
+    })
+    
+    
+  }, [toolbarState])
 
   const [zoom, setZoom] = useState(100);
 
@@ -106,24 +146,14 @@ export default function YFilesCanvas() {
       
       <LeftPanel />
       <Toolbar 
-       onZoomIn={handleZoomIn}
+        state={toolbarState}
+        onZoomIn={handleZoomIn}
         onZoomOut={handleZoomOut}
         onZoomReset={handleZoomReset}
-        onArrowTool={() => {
-          setIsArrowMode(true)
-          setIsStickyMode(false)
-          setIsTextMode(false)
-        }}
-        onStickyNote={() => {
-          setIsStickyMode(true)
-          setIsArrowMode(false)
-          setIsTextMode(false)
-        }}
-        onTextTool={() => {
-          setIsTextMode(true)
-          setIsStickyMode(false)
-          setIsArrowMode(false)
-        }}
+        onArrowTool={() => setToolbarMode("arrowMode")}
+        onStickyNote={() => setToolbarMode("stickyMode")}
+        onSectionTool={() => setToolbarMode("sectionMode")}
+        onTextTool={() => setToolbarMode("textMode")}
       />
         <div ref={containerRef} className="absolute inset-0 w-full h-full" />
       <AnnotationToolbar onZoomIn={handleZoomIn}
