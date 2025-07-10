@@ -36,6 +36,7 @@ export default function YFilesCanvas() {
   const [isArrowMode, setIsArrowMode] = useState(false)
   const [isStickyMode, setIsStickyMode] = useState(false)
   const [isTextMode, setIsTextMode] = useState(false)
+  const [mainGroupNode, setMainGroupNode] = useState<INode | null>(null)
 
   useEffect(() => {
     if (!containerRef.current || graphComponentRef.current) {
@@ -50,9 +51,9 @@ export default function YFilesCanvas() {
     const graph = graphComponent.graph
     configureGraph(graph)
     
-
     // Create 5 flowcharts with random nodes
-    createFlowchartGroups(graph)
+    const mainGroup = createFlowchartGroups(graph)
+    setMainGroupNode(mainGroup)
 
     // Enable editing
     graphComponent.inputMode = new GraphEditorInputMode({
@@ -66,6 +67,9 @@ export default function YFilesCanvas() {
       console.log("Graph Right Clicked", args.item)
     })
 
+    graphComponent.inputMode.addEventListener('canvas-clicked', () => {
+      console.log("Canvas Clicked")
+    })
 
     // Apply layout and fit the graph
     applyLayoutAndFit(graphComponent)
@@ -78,10 +82,17 @@ export default function YFilesCanvas() {
   }, [])
 
   useEffect(() => {
-    if (!containerRef.current || graphComponentRef.current) {
+    if (!graphComponentRef.current) {
       return
     }
-    //Annotation actions here
+    
+    if (isArrowMode) {
+      console.log("Arrow mode enabled")
+    } else if (isStickyMode) {
+      console.log("Sticky mode enabled")
+    } else if (isTextMode) {
+      console.log("Text mode enabled")
+    }
   }, [isArrowMode, isStickyMode, isTextMode])
 
   const [zoom, setZoom] = useState(100);
@@ -98,9 +109,21 @@ export default function YFilesCanvas() {
        onZoomIn={handleZoomIn}
         onZoomOut={handleZoomOut}
         onZoomReset={handleZoomReset}
-        onArrowTool={() => setIsArrowMode(true)}
-        onStickyNote={() => setIsStickyMode(true)}
-        onTextTool={() => setIsTextMode(true)}
+        onArrowTool={() => {
+          setIsArrowMode(true)
+          setIsStickyMode(false)
+          setIsTextMode(false)
+        }}
+        onStickyNote={() => {
+          setIsStickyMode(true)
+          setIsArrowMode(false)
+          setIsTextMode(false)
+        }}
+        onTextTool={() => {
+          setIsTextMode(true)
+          setIsStickyMode(false)
+          setIsArrowMode(false)
+        }}
       />
         <div ref={containerRef} className="absolute inset-0 w-full h-full" />
       <AnnotationToolbar onZoomIn={handleZoomIn}
@@ -119,18 +142,18 @@ export default function YFilesCanvas() {
 function configureGraph(graph: IGraph) {
   // Configure default styles for nodes and edges
   graph.nodeDefaults.style = new ReactComponentNodeStyle(NodeTemplate)
-
   graph.nodeDefaults.size = new Size(100, 60)
 
   // Configure group node style to be transparent
   graph.groupNodeDefaults.style = new GroupNodeStyle({
     tabFill: 'transparent',
     contentAreaFill: 'transparent',
-    stroke: 'rgba(0, 0, 0, 0.2)',
+    stroke: 'transparent',
     cornerRadius: 8,
     tabPosition: 'top-leading',
-    tabWidth: 120,
-    tabHeight: 24
+    tabWidth: 0,
+    tabHeight: 0
+    
   })
 
 }
@@ -145,17 +168,17 @@ function createFlowchartGroups(graph: IGraph) {
   ]
 
   // Create main container group for all flowcharts
-  const mainGroup = graph.createGroupNode()
+  const section = graph.createGroupNode()
  
   // Set transparent style for the main group (no outline)
-  graph.setStyle(mainGroup, new GroupNodeStyle({
+  graph.setStyle(section, new GroupNodeStyle({
     tabFill: 'transparent',
     contentAreaFill: 'transparent',
-    stroke: 'transparent',
-    cornerRadius: 0,
+    stroke: 'rgba(0, 0, 0, 0.2)',
+    cornerRadius: 8,
     tabPosition: 'top-leading',
-    tabWidth: 0,
-    tabHeight: 0
+    tabWidth: 120,
+    tabHeight: 24
   }))
 
   const groupPositions = [
@@ -166,11 +189,12 @@ function createFlowchartGroups(graph: IGraph) {
     new Point(650, 350)
   ]
   flowchartNames.forEach((name, index) => {
-    createFlowchart(graph, name, groupPositions[index], mainGroup)
+    createFlowchart(graph, name, groupPositions[index], section)
   })
   
   // Adjust the main group bounds to fit all content
-  graph.adjustGroupNodeLayout(mainGroup)
+  graph.adjustGroupNodeLayout(section)
+  return section
 }
 
 function createFlowchart(graph: IGraph, name: string, position: Point, parentGroup: INode) {
