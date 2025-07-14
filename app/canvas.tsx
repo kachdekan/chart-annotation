@@ -71,7 +71,7 @@ export default function YFilesCanvas() {
     configureGraph(graph)
     
     // Create 5 flowcharts with random nodes
-    createFlowchartGroups(graph)
+    createFlowchartGroups(graph, graphComponent)
 
     // Enable editing
     graphComponent.inputMode = new GraphEditorInputMode({
@@ -103,15 +103,27 @@ export default function YFilesCanvas() {
       return;
     }
     const graphComponent = graphComponentRef.current;
-    // Cast to correct type to ensure add/removeEventListener exists
     const inputMode = graphComponent.inputMode as any;
+
+    // Update selectable items based on sectionMode
+    if (toolbarStateRef.current.sectionMode) {
+      // Only top-level group nodes (flowcharts) selectable
+      inputMode.selectableItems = GraphItemTypes.GROUP_NODE;
+      // Only allow selection of group nodes whose parent is root (top-level)
+      inputMode.itemSelectablePredicate = (item: any) => {
+        const graph = graphComponent.graph;
+        return graph.isGroupNode(item) && graph.getParent(item) == null;
+      };
+    } else {
+      // Restore normal selection
+      inputMode.selectableItems = GraphItemTypes.NODE | GraphItemTypes.EDGE;
+      inputMode.itemSelectablePredicate = null;
+    }
     // Handler that always uses the latest toolbarState
     const handleCanvasClicked = (args: any) => {
       const toolbar = toolbarStateRef.current;
-      console.log("Updated", toolbar);
       const location = args.location;
       if (toolbar.arrowMode) {
-        console.log("Arrow Mode is Enabled");
         const node1 = graphComponent.graph.createNode(
           new Rect(location.x, location.y, 1, 1),
         );
@@ -122,7 +134,6 @@ export default function YFilesCanvas() {
         const port2 = graphComponent.graph.addPort(node2);
         graphComponent.graph.createEdge(port1, port2);
       } else if (toolbar.stickyMode) {
-        console.log("Sticky mode enabled");
         const node = graphComponent.graph.createNode(
           new Rect(location.x - 75, location.y - 50, 200, 250),
           new ReactComponentNodeStyle(() => (
@@ -140,7 +151,6 @@ export default function YFilesCanvas() {
         );
         graphComponent.graph.addLabel(node, "Double-click to edit Sticky");
       } else if (toolbar.textMode) {
-        console.log("Text mode enabled");
         const node = graphComponent.graph.createNode(
           new Rect(location.x - 100, location.y - 25, 200, 50),
           new ReactComponentNodeStyle(() => (
@@ -150,16 +160,52 @@ export default function YFilesCanvas() {
           ))
         );
         graphComponent.graph.addLabel(node, "Double-click to edit");
-      } else if (toolbar.sectionMode) {
-        console.log("Section mode enabled");
       }
+    };
+    // --- Sectioning logic ---
+    const handleMultiSelectionFinished = (args: any) => {
+      const toolbar = toolbarStateRef.current;
+      if (!toolbar.sectionMode) return;
+      // Get selected top-level group nodes robustly (yFiles v30)
+      const graph = graphComponent.graph;
+      const selectedNodes: INode[] = [];
+      graphComponent.selection.nodes.forEach((node: INode) => {
+        if (graph.isGroupNode(node) && graph.getParent(node) == null) {
+          selectedNodes.push(node);
+        }
+      });
+      if (selectedNodes.length < 2) return; // Only group if more than one
+      // Create a new group node
+      const groupNode = graphComponent.graph.createGroupNode();
+      // Style the group node as a section
+      graphComponent.graph.setStyle(groupNode, new GroupNodeStyle({
+        tabFill: 'transparent',
+        contentAreaFill: 'transparent',
+        stroke: 'rgba(0, 0, 0, 0.2)',
+        cornerRadius: 8,
+        tabPosition: 'top-leading',
+        tabWidth: 120,
+        tabHeight: 24
+      }));
+      // Optionally, add a label to the group node
+      graphComponent.graph.addLabel(groupNode, 'Section');
+      // Set parent for each selected node
+      selectedNodes.forEach((node: INode) => {
+        graphComponent.graph.setParent(node, groupNode);
+      });
+      // Adjust group bounds to fit content
+      graphComponent.graph.adjustGroupNodeLayout(groupNode);
+      // Optionally clear selection
+      graphComponent.selection.clear();
     };
     if (inputMode && typeof inputMode.addEventListener === 'function') {
       inputMode.addEventListener('canvas-clicked', handleCanvasClicked);
+      inputMode.addEventListener('multi-selection-finished', handleMultiSelectionFinished);
     }
     return () => {
       if (inputMode && typeof inputMode.removeEventListener === 'function') {
         inputMode.removeEventListener('canvas-clicked', handleCanvasClicked);
+        inputMode.removeEventListener('multi-selection-finished', handleMultiSelectionFinished);
       }
     };
   }, [])
@@ -217,123 +263,95 @@ function configureGraph(graph: IGraph) {
 
 }
 
-function createFlowchartGroups(graph: IGraph) {
+function createFlowchartGroups(graph: IGraph, graphComponent?: GraphComponent) {
   const flowchartNames = [
     'User Authentication Flow',
     'Payment Processing',
     'Data Validation Pipeline',
     'Notification System',
     'Report Generation'
-  ]
+  ];
 
-  // Create main container group for all flowcharts
-  const section1 = graph.createGroupNode()
-  const section2 = graph.createGroupNode()
-
- 
-  // Set transparent style for the main group (no outline)
-  graph.setStyle(section1, new GroupNodeStyle({
-    tabFill: 'transparent',
-    contentAreaFill: 'transparent',
-    stroke: 'rgba(0, 0, 0, 0.2)',
-    cornerRadius: 8,
-    tabPosition: 'top-leading',
-    tabWidth: 120,
-    tabHeight: 24
-  }))
-
-  graph.setStyle(section2, new GroupNodeStyle({
-    tabFill: 'transparent',
-    contentAreaFill: 'transparent',
-    stroke: 'rgba(0, 0, 0, 0.2)',
-    cornerRadius: 8,
-    tabPosition: 'top-leading',
-    tabWidth: 120,
-    tabHeight: 24
-  }))
-
-
+  // No main container group for all flowcharts (all ungrouped at start)
   const groupPositions = [
     new Point(50, 50),
     new Point(450, 50),
     new Point(850, 50),
     new Point(250, 350),
     new Point(650, 350)
-  ]
-  flowchartNames.slice(0, 3).forEach((name, index) => {
-    createFlowchart(graph, name, groupPositions[index], section1)
-  })
-  flowchartNames.slice(3, 5).forEach((name, index) => {
-    createFlowchart(graph, name, groupPositions[index], section2)
-  })
-  
-  
-  // Adjust the main group bounds to fit all content
-  graph.adjustGroupNodeLayout(section1)
-  graph.adjustGroupNodeLayout(section2)
-  
-  return section1
+  ];
+  const createdGroups: INode[] = [];
+  flowchartNames.forEach((name, index) => {
+    const groupNode = createFlowchart(graph, name, groupPositions[index]);
+    // Expand group node to ensure children are visible
+    if (graph.setGroupNodeCollapsed) {
+      graph.setGroupNodeCollapsed(groupNode, false);
+    }
+    createdGroups.push(groupNode);
+  });
+  // Log all nodes and group nodes
+  const allNodes = Array.from(graph.nodes);
+  const allGroups = Array.from(graph.groupNodes ? graph.groupNodes : []);
+  console.log('All nodes:', allNodes);
+  console.log('All group nodes:', allGroups);
+  // Force fit to bounds if graphComponent is provided
+  if (graphComponent) {
+    graphComponent.fitGraphBounds();
+  }
 }
 
-function createFlowchart(graph: IGraph, name: string, position: Point, parentGroup: INode) {
+function createFlowchart(graph: IGraph, name: string, position: Point): INode {
   // Generate random number of nodes between 5 and 10
-  const nodeCount = Math.floor(Math.random() * 6) + 5
+  const nodeCount = Math.floor(Math.random() * 6) + 5;
   
   // Create group node
-  const groupNode = graph.createGroupNode()
-  //graph.addLabel(groupNode, name)
+  const groupNode = graph.createGroupNode();
+  // Use default groupNode style (transparent, as set in configureGraph)
+  // Add a label for clarity
+  graph.addLabel(groupNode, name);
   
-  // Set this flowchart group as child of the main group
-  graph.setParent(groupNode, parentGroup)
-  
-  const nodes: INode[] = []
-  
+  const nodes: INode[] = [];
   // Create nodes within the group
   for (let i = 0; i < nodeCount; i++) {
-    const x = position.x + (i % 3) * 120
-    const y = position.y + Math.floor(i / 3) * 80 + 40
-    
-    const node = graph.createNode(new Rect(x, y, 100, 60))
-    graph.addLabel(node, `Step ${i + 1}`)
-    graph.setParent(node, groupNode)
-    nodes.push(node)
+    const x = position.x + (i % 3) * 120;
+    const y = position.y + Math.floor(i / 3) * 80 + 40;
+    const node = graph.createNode(new Rect(x, y, 100, 60));
+    graph.addLabel(node, `Step ${i + 1}`);
+    graph.setParent(node, groupNode);
+    nodes.push(node);
   }
-  
   // Create edges to form a flowchart structure
   for (let i = 0; i < nodes.length - 1; i++) {
     // Create sequential connections
     if (i < nodes.length - 1) {
-      graph.createEdge(nodes[i], nodes[i + 1])
+      graph.createEdge(nodes[i], nodes[i + 1]);
     }
-    
     // Add some branching (random connections)
     if (Math.random() > 0.7 && i < nodes.length - 2) {
-      graph.createEdge(nodes[i], nodes[i + 2])
+      graph.createEdge(nodes[i], nodes[i + 2]);
     }
   }
-  
   // Adjust group bounds to fit content
-  graph.adjustGroupNodeLayout(groupNode)
+  graph.adjustGroupNodeLayout(groupNode);
+  return groupNode;
 }
 
 async function applyLayoutAndFit(graphComponent: GraphComponent) {
   // Apply hierarchical layout to each group
-  const layout = new ComponentLayout()
-  const layoutData = new ComponentLayoutData()
-  
+  const layout = new ComponentLayout();
+  const layoutData = new ComponentLayoutData();
   // Apply layout
   const layoutExecutor = new LayoutExecutor({
     graphComponent,
     layout: new MinimumNodeSizeStage(layout),
     layoutData,
     animateViewport: true
-  })
-  
+  });
   try {
-    await layoutExecutor.start()
-    graphComponent.fitGraphBounds()
+    await layoutExecutor.start();
+    graphComponent.fitGraphBounds();
   } catch (error) {
-    console.error('Layout failed:', error)
-    graphComponent.fitGraphBounds()
+    console.error('Layout failed:', error);
+    graphComponent.fitGraphBounds();
   }
 }
