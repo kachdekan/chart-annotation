@@ -42,6 +42,8 @@ export default function YFilesCanvas() {
     textMode: false,
     sectionMode: false
   })
+  // Ref to always hold latest toolbarState
+  const toolbarStateRef = useRef(toolbarState);
 
   const setToolbarMode =(mode: ToolbarMode) => {
     const newState = {
@@ -50,10 +52,8 @@ export default function YFilesCanvas() {
       textMode: false,
       sectionMode: false
     };
-
-      if(mode) newState[mode] = !toolbarState[mode]
-      setToolbarState(newState);
-  
+    if(mode) newState[mode] = !toolbarState[mode]
+    setToolbarState(newState);
   }
   //let sections: INode[] | null = null
 
@@ -93,51 +93,54 @@ export default function YFilesCanvas() {
     }
   }, [])
 
+  // Keep toolbarStateRef in sync with toolbarState
+  useEffect(() => {
+    toolbarStateRef.current = toolbarState;
+  }, [toolbarState]);
+
   useEffect(() => {
     if (!graphComponentRef.current) {
-      return
+      return;
     }
-    
-    const graphComponent = graphComponentRef.current
-    graphComponent.inputMode.addEventListener('canvas-clicked', (args) => {
-      console.log("Updated", toolbarState)
-     const location = args.location
-      if (toolbarState.arrowMode) {
-        console.log("Arrow Mode is Enabled")
-
+    const graphComponent = graphComponentRef.current;
+    // Cast to correct type to ensure add/removeEventListener exists
+    const inputMode = graphComponent.inputMode as any;
+    // Handler that always uses the latest toolbarState
+    const handleCanvasClicked = (args: any) => {
+      const toolbar = toolbarStateRef.current;
+      console.log("Updated", toolbar);
+      const location = args.location;
+      if (toolbar.arrowMode) {
+        console.log("Arrow Mode is Enabled");
         const node1 = graphComponent.graph.createNode(
           new Rect(location.x, location.y, 1, 1),
-        )
-        const port1 = graphComponent.graph.addPort(node1)
+        );
+        const port1 = graphComponent.graph.addPort(node1);
         const node2 = graphComponent.graph.createNode(
           new Rect(location.x + 150, location.y, 1, 1),
-        )
-        const port2 = graphComponent.graph.addPort(node2)
-        
-        // Create an edge between port1 and port2 with default style
-        graphComponent.graph.createEdge(port1, port2)
-        
-      
-      } else if (toolbarState.stickyMode) {
-        console.log("Sticky mode enabled")
+        );
+        const port2 = graphComponent.graph.addPort(node2);
+        graphComponent.graph.createEdge(port1, port2);
+      } else if (toolbar.stickyMode) {
+        console.log("Sticky mode enabled");
         const node = graphComponent.graph.createNode(
           new Rect(location.x - 75, location.y - 50, 200, 250),
           new ReactComponentNodeStyle(() => (
             <g>
-            {/* Background rectangle with border */}
-            <rect
-              width={200}
-              height={250}
-              rx="8" // rounded corners
-              fill="#FFFFC5"
-              strokeWidth={1.5}
-            />
-          </g>
+              {/* Background rectangle with border */}
+              <rect
+                width={200}
+                height={250}
+                rx="8" // rounded corners
+                fill="#FFFFC5"
+                strokeWidth={1.5}
+              />
+            </g>
           ))
-        )
-        graphComponent.graph.addLabel(node, "Double-click to edit Sticky")
-      } else if (toolbarState.textMode) {
-        console.log("Text mode enabled")
+        );
+        graphComponent.graph.addLabel(node, "Double-click to edit Sticky");
+      } else if (toolbar.textMode) {
+        console.log("Text mode enabled");
         const node = graphComponent.graph.createNode(
           new Rect(location.x - 100, location.y - 25, 200, 50),
           new ReactComponentNodeStyle(() => (
@@ -145,15 +148,21 @@ export default function YFilesCanvas() {
               <p className="text-center">Double-click to edit text</p>
             </div>
           ))
-        )
-        graphComponent.graph.addLabel(node, "Double-click to edit")
-      }else if (toolbarState.sectionMode) {
-        console.log("Text mode enabled")
+        );
+        graphComponent.graph.addLabel(node, "Double-click to edit");
+      } else if (toolbar.sectionMode) {
+        console.log("Section mode enabled");
       }
-    })
-    
-    
-  }, [toolbarState])
+    };
+    if (inputMode && typeof inputMode.addEventListener === 'function') {
+      inputMode.addEventListener('canvas-clicked', handleCanvasClicked);
+    }
+    return () => {
+      if (inputMode && typeof inputMode.removeEventListener === 'function') {
+        inputMode.removeEventListener('canvas-clicked', handleCanvasClicked);
+      }
+    };
+  }, [])
 
   const [zoom, setZoom] = useState(100);
 
