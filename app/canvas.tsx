@@ -17,7 +17,9 @@ import {
   LayoutExecutor,
   MinimumNodeSizeStage,
   ComponentLayout,
-  ComponentLayoutData
+  ComponentLayoutData,
+  IModelItem,
+  ItemEventArgs
   
 } from '@yfiles/yfiles'
 import yfLicense from "@/lib/license.json"
@@ -30,7 +32,6 @@ import { AnnotationToolbar } from '@/components/AnnotationToolbar'
 
 // You'll need to provide your yFiles license here
 License.value = yfLicense
-
 
 export default function YFilesCanvas() {
   const graphComponentRef = useRef<GraphComponent | null>(null)
@@ -69,6 +70,37 @@ export default function YFilesCanvas() {
     // Configure basic interaction
     const graph = graphComponent.graph
     configureGraph(graph)
+
+    const deletingSelectionListener = (sender: any, args: any) => {
+      const nodesToRemove: INode[] = []
+      graphComponent.selection.forEach((item: IModelItem) => {
+        if (item instanceof IEdge) {
+          const edge = item
+          if (edge.sourceNode && edge.targetNode) {
+            const sourceNode = edge.sourceNode
+            const targetNode = edge.targetNode
+            // Arrow nodes are 1x1, a characteristic of our arrow annotations
+            if (
+              sourceNode.layout.width === 1 &&
+              sourceNode.layout.height === 1 &&
+              targetNode.layout.width === 1 &&
+              targetNode.layout.height === 1
+            ) {
+              nodesToRemove.push(sourceNode)
+              nodesToRemove.push(targetNode)
+            }
+          }
+        }
+      })
+
+      if (nodesToRemove.length > 0) {
+        // Use a timeout to avoid modifying the graph during an event callback
+        setTimeout(() => {
+          const graph = graphComponent.graph
+          nodesToRemove.forEach(node => graph.remove(node))
+        }, 0)
+      }
+    };
     
     // Create 5 flowcharts with random nodes
     createFlowchartGroups(graph, graphComponent)
@@ -78,8 +110,9 @@ export default function YFilesCanvas() {
       selectableItems: GraphItemTypes.NODE | GraphItemTypes.EDGE,
       allowEditLabel: true,
       allowCreateNode: false
-      
-    })
+    });
+    graphComponent.inputMode.addEventListener('deleting-selection', deletingSelectionListener);
+    
 
    
 
@@ -88,6 +121,10 @@ export default function YFilesCanvas() {
     
     return () => {
       // Clean up on unmount
+      if (graphComponent.inputMode) {
+        const geim = graphComponent.inputMode as GraphEditorInputMode
+        geim.removeEventListener('deleting-selection', deletingSelectionListener)
+      }
       graphComponent.cleanUp()
       graphComponentRef.current = null
     }
